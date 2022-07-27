@@ -1,6 +1,28 @@
 #include "utility.h"
 #include "lio_sam/cloud_info.h"
 
+/*
+激光运动畸变矫正
+功能介绍：
+1. 利用当前激光帧起止时间的imu数据计算旋转增量，IMU里程计数据（来自ImuPreintegration）计算平移增量，
+进而对该帧激光每一时刻的激光点进行运动畸变矫正（利用相对于激光帧起止时刻的位置增量，变换到当前激光点到起
+始时刻激光点的坐标下，实现矫正）
+
+2. 同时用IMU数据的姿态角RPY， roll， pitch， yaw， IMU里程计数据的位姿，对当前帧激光位姿进行粗略初
+始化
+
+订阅
+
+1. 订阅原始IMU数据
+2. 订阅IMU里程计数据， 来自ImuPreintegration， 表示每一时刻对应的位姿
+3. 订阅原始激光点云数据
+
+发布
+
+1. 发布当前帧激光运动畸变矫正之后的有效点云
+
+*/
+
 struct VelodynePointXYZIRT
 {
     PCL_ADD_POINT4D

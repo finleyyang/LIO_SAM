@@ -1,5 +1,7 @@
 lio_sam:
 
+  #参数配置
+
   # Topics
   pointCloudTopic: "points_raw"               # Point cloud data
   imuTopic: "imu_raw"                         # IMU data
