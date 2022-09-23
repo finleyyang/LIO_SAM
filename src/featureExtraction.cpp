@@ -1,6 +1,26 @@
 #include "utility.h"
 #include "lio_sam/cloud_info.h"
 
+
+/*
+ 点云特征提取
+
+ 功能介绍
+ 对经过运动畸变矫正之后的当前帧激光点云，计算每个点的曲率，进而提取角点，平面点（曲率的大小进行判定）
+
+ 订阅
+
+ 1. 订阅当前激光帧运动畸变矫正之后的点云信息，来自ImageProjection
+
+ 发布
+
+ 1. 发布当前激光帧提取特征点之后的数据，包括历史数据有：运动畸变矫正，点云数据，初始位姿，姿态角，有效
+ 点云,角点点云，平面点云，等，发布给MapOptimization
+ 2. 发布当前激光帧提取的角点点云，用于rviz展示
+ 3. 发布当前激光帧提取的平面点点云，用于rviz展示
+
+*/
+
 struct smoothness_t{ 
     float value;
     size_t ind;
