@@ -33,6 +33,7 @@ lio_sam:
   lidarMaxRange: 1000.0                       # default: 1000.0, maximum lidar range to be used
 
   # IMU Settings
+  # imu的bias和噪声，加速度计和陀螺仪三个轴共用同一个bias和噪声
   imuAccNoise: 3.9939570888238808e-03
   imuGyrNoise: 1.5636343949698187e-03
   imuAccBiasN: 6.4356659353532566e-05
@@ -41,6 +42,7 @@ lio_sam:
   imuRPYWeight: 0.01
 
   # Extrinsics: T_lb (lidar -> imu)
+  # 雷达imu的外参
   extrinsicTrans: [0.0, 0.0, 0.0]
   extrinsicRot: [-1, 0, 0,
                   0, 1, 0,
@@ -67,7 +69,8 @@ lio_sam:
   mappingSurfLeafSize: 0.4                      # default: 0.4 - outdoor, 0.2 - indoor
 
   # robot motion constraint (in case you are using a 2D robot)
-  z_tollerance: 1000                            # meters
+  # z_tolleraznce, 用来限制z轴变换过大，防止飘走
+  z_tolleraznce: 1000                            # meters
   rotation_tollerance: 1000                     # radians
 
   # CPU Params

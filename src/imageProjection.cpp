@@ -151,7 +151,7 @@ public:
         // 发布当前激光帧运动畸变矫正后的点云信息
         pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/deskew/cloud_info", 1);
 
-        // 初始化
+        // 初始化，分配内存
         allocateMemory();
         // 重置参数
         resetParameters();
@@ -165,6 +165,8 @@ public:
      */
     void allocateMemory()
     {
+        //根据param.yaml中给出的N_SCAN Horizon_SCAN参数值分配内存
+        // 用智能指针的reset方法在构造函数里面进行初始化
         laserCloudIn.reset(new pcl::PointCloud<PointXYZIRT>());
         tmpOusterCloudIn.reset(new pcl::PointCloud<OusterPointXYZIRT>());
         fullCloud.reset(new pcl::PointCloud<PointType>());
@@ -172,6 +174,8 @@ public:
 
         fullCloud->points.resize(N_SCAN*Horizon_SCAN);
 
+        //cloudinfo是msg文件下自定义的cloud_info消息，对其中的变量进行赋值操作
+        //(int size, int value):size-要分配的值数,value-要分配给向量名称的值
         cloudInfo.startRingIndex.assign(N_SCAN, 0);
         cloudInfo.endRingIndex.assign(N_SCAN, 0);
 
@@ -186,9 +190,12 @@ public:
     */
     void resetParameters()
     {
+        //清零操作
         laserCloudIn->clear();
         extractedCloud->clear();
         // reset range matrix for range image projection
+        // 初始全部FLT_MAX填充
+        //因此后文函数projectPointCloud中有一句if (rangeMat.at<float>(rowIdn, columnIdn) != FLT_MAX) continue;
         rangeMat = cv::Mat(N_SCAN, Horizon_SCAN, CV_32F, cv::Scalar::all(FLT_MAX));
 
         imuPointerCur = 0;
@@ -350,7 +357,7 @@ public:
             ros::shutdown();
         }
 
-        // 检查是否存在ring通道，注意static只检查一次
+        // 检查是否存在ring通道，注意static只检查一次，检查ring这个field是否存在，
         // check ring channel
         static int ringFlag = 0;
         if (ringFlag == 0)
@@ -565,10 +572,13 @@ public:
         // 提取当前激光帧结束时候的imu里程计
         nav_msgs::Odometry endOdomMsg;
 
+        // 提取当前激光帧结束时刻的imu里程计
         for (int i = 0; i < (int)odomQueue.size(); ++i)
         {
             endOdomMsg = odomQueue[i];
 
+            // 在cloudHandler的cachePointCloud函数中，       timeScanEnd = timeScanCur + laserCloudIn->points.back().time;
+            // 找到第一个大于一帧激光结束时刻的odom
             if (ROS_TIME(&endOdomMsg) < timeScanEnd)
                 continue;
             else
@@ -604,21 +614,30 @@ public:
 
         // 查找当前时刻在imuTime下的索引
         int imuPointerFront = 0;
+        // imuDeskewInfo中，对imuPointerCur进行计数,(计数到超过当前激光帧结束时刻0.01s)
         while (imuPointerFront < imuPointerCur)
         {
+            // imuTime在imuDeskewInfo(deskewInfo中调用，deskewInfo在cloudHandler中调用)被赋值，从imuQueue中取值
+            // pointTime为当前时刻，由此函数的函数形参传入，要找到imu积分列表里第一个大于当前时间的索引
             if (pointTime < imuTime[imuPointerFront])
                 break;
             ++imuPointerFront;
         }
 
         // 设为离当前时刻最近的旋转增量
+        // 如果计数为0，或者该次imu时间戳小于当前时间戳
         if (pointTime > imuTime[imuPointerFront] || imuPointerFront == 0)
         {
+            // 未找到大于当前时刻的imu积分索引
+            // imuRotX等为之前积分的内容
             *rotXCur = imuRotX[imuPointerFront];
             *rotYCur = imuRotY[imuPointerFront];
             *rotZCur = imuRotZ[imuPointerFront];
         } else {
+            // 前后时刻插值计算当前时刻的旋转增量
+            // 此时front的时间是大于当前pointTime时间，back=front-1刚好小于当前pointTime时间，前后时刻插值计算
             int imuPointerBack = imuPointerFront - 1;
+
             double ratioFront = (pointTime - imuTime[imuPointerBack]) / (imuTime[imuPointerFront] - imuTime[imuPointerBack]);
             double ratioBack = (imuTime[imuPointerFront] - pointTime) / (imuTime[imuPointerFront] - imuTime[imuPointerBack]);
             *rotXCur = imuRotX[imuPointerFront] * ratioFront + imuRotX[imuPointerBack] * ratioBack;

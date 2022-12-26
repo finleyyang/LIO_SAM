@@ -250,6 +250,12 @@ public:
         usleep(100);
     }
 
+    /*
+     * imuConverter的主要作用是将imu的信息，从imu坐标系转换到雷达坐标系。只有旋转没有平移
+     * 
+     * 事实上，作者后续是把imu数据先用imuConverter旋转到雷达系下（但其实还差了个平移）。
+     * 然后他把雷达数据又根据lidar2Imu反向平移了一下，和转换以后差了个平移的imu数据在“中间系”对齐，之后算完又从中间系通过imu2Lidar挪回了雷达系进行publish。
+     */
     sensor_msgs::Imu imuConverter(const sensor_msgs::Imu& imu_in)
     {
         sensor_msgs::Imu imu_out = imu_in;
